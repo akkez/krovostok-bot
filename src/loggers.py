@@ -6,6 +6,8 @@ from aiogram.dispatcher.middlewares import BaseMiddleware
 
 from src.models import BotUser, BotMessage
 
+logger = logging.getLogger(__name__)
+
 
 def setup_logging(file, level=logging.INFO):
 	log_format = '[%(asctime)s] %(name)s: %(levelname)s %(message)s'
@@ -22,10 +24,14 @@ class LogMiddleware(BaseMiddleware):
 		bot_obj = await message.bot.me
 		user_obj = None
 
-		if message.callback_query:
-			from_user = message.callback_query.from_user
-		else:
-			from_user = message.message.from_user
+		try:
+			if message.callback_query:
+				from_user = message.callback_query.from_user
+			else:
+				from_user = message.message.from_user
+		except Exception:
+			logger.warning(f'Unprocessable update: {message}')
+			from_user = False
 		if from_user:
 			if not await BotUser.filter(id=from_user.id).count():
 				try:
