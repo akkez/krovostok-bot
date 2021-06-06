@@ -4,6 +4,7 @@ import os
 import tempfile
 from pathlib import Path
 
+import aiogram
 from aiogram import Dispatcher, types
 from aiogram.types import ContentType
 
@@ -44,7 +45,7 @@ async def run_transformation(input_filepath: str, volume: float, output_filepath
                   ffmpeg.input(filename)]
         result, _ = ffmpeg.filter(inputs, 'amix', inputs=2, duration='shortest').output(output_file).run()
     """
-	minus = Path(__file__).absolute().parent / 'files' / 'krovominus.mp3'
+	minus = Path(__file__).absolute().parent.parent / 'files' / 'krovominus.mp3'
 	shell_command = f'ffmpeg -y -i {minus} -i {input_filepath} -filter_complex "[0]volume={volume:.2f}[s0];[s0][1]amix=duration=shortest:inputs=2[s1]" -map [s1] {output_filepath}'
 	ret_code = await execute_shell_command(shell_command)
 	return ret_code
@@ -136,7 +137,10 @@ async def on_change_volume(query: types.CallbackQuery):
 			                           voice=audio_file_fp,
 			                           caption=f'@{(await query.bot.me).username}',
 			                           reply_markup=get_volume_inline_choose_keyboard(audio))
-			await query.bot.delete_message(chat_id=query.message.chat.id, message_id=query.message.message_id)
+			try:
+				await query.bot.delete_message(chat_id=query.message.chat.id, message_id=query.message.message_id)
+			except aiogram.exceptions.MessageToDeleteNotFound:
+				logger.warning(f'Looks like message {query.message.message_id} in chat {query.message.chat.id} was already deleted. Fine.')
 
 
 def setup(dp: Dispatcher):

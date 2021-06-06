@@ -3,3 +3,4 @@ logs/
 venv/
 
 .env
+*.sqlite3*
