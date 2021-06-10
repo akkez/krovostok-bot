@@ -1,4 +1,6 @@
 import asyncio
+import datetime
+import glob
 import logging
 import os
 import tempfile
@@ -143,6 +145,28 @@ async def on_change_volume(query: types.CallbackQuery):
 				logger.warning(f'Looks like message {query.message.message_id} in chat {query.message.chat.id} was already deleted. Fine.')
 
 
+async def delete_old_audios():
+	PENDING_PERIOD = 3600 * 48
+	now = datetime.datetime.now()
+	for filename in glob.glob('/tmp/*.mp3') + glob.glob('/tmp/*.ogg'):
+		if not os.path.isfile(filename):
+			continue
+		file_modified_at = datetime.datetime.fromtimestamp(os.path.getmtime(filename))
+		if (now - file_modified_at).total_seconds() > PENDING_PERIOD:
+			logger.info(f'Removing old recording: {filename}')
+			os.unlink(filename)
+
+
+async def schedule_repeated_task(coroutine, interval: int, timeout: int = 5):
+	await asyncio.sleep(timeout)
+	while True:
+		try:
+			await coroutine()
+		except Exception:
+			logger.exception(f'Failed to perform task {coroutine}')
+		await asyncio.sleep(interval)
+
+
 def setup(dp: Dispatcher):
 	dp.register_message_handler(send_welcome, commands=['start'], content_types=ContentType.TEXT, chat_type=[types.ChatType.PRIVATE])
 
@@ -153,3 +177,6 @@ def setup(dp: Dispatcher):
 
 	dp.register_callback_query_handler(on_change_volume, regexp='^run_[0-9a-z]+_[\+-]('
 	                                                            + '|'.join(map(str, VOLUME_CHANGING_STEPS)) + ')$')
+
+	loop = asyncio.get_event_loop()
+	loop.create_task(schedule_repeated_task(delete_old_audios, 3600 * 24))
