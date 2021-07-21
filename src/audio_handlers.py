@@ -10,7 +10,8 @@ import aiogram
 from aiogram import Dispatcher, types
 from aiogram.types import ContentType
 
-from src.models import BotAudio, BotUser
+from src.models import BotAudio, BotUser, BotMessage
+from src.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -145,6 +146,40 @@ async def on_change_volume(query: types.CallbackQuery):
 				logger.warning(f'Looks like message {query.message.message_id} in chat {query.message.chat.id} was already deleted. Fine.')
 
 
+async def send_stats(message: types.Message):
+	user_id = message.chat.id if message.chat else None
+	if not user_id or int(user_id) not in Config.ADMIN_USERS:
+		logger.warning(f'{message.chat} wants to have a chat btw')
+		return
+
+	now = datetime.datetime.now()
+	day_ago = now - datetime.timedelta(days=1)
+	week_ago = now - datetime.timedelta(days=7)
+	month_ago = now - datetime.timedelta(days=30)
+	audios_day, audios_week, audios_month, audios_total = \
+		await BotAudio.filter(created_at__gte=day_ago).count(), \
+		await BotAudio.filter(created_at__gte=week_ago).count(), \
+		await BotAudio.filter(created_at__gte=month_ago).count(), \
+		await BotAudio.all().count()
+
+	users_day, users_week, users_month, users_total = \
+		await BotUser.filter(created_at__gte=day_ago).count(), \
+		await BotUser.filter(created_at__gte=week_ago).count(), \
+		await BotUser.filter(created_at__gte=month_ago).count(), \
+		await BotUser.all().count()
+
+	messages_day, messages_week, messages_month, messages_total = \
+		await BotMessage.filter(created_at__gte=day_ago).count(), \
+		await BotMessage.filter(created_at__gte=week_ago).count(), \
+		await BotMessage.filter(created_at__gte=month_ago).count(), \
+		await BotMessage.all().count()
+
+	await message.reply(f'📡 Stats: day / week / month / total\n'
+	                    f'🔊 Audios processed: {audios_day} / {audios_week} / {audios_month} / {audios_total}\n'
+	                    f'😎 New Users: {users_day} / {users_week} / {users_month} / {users_total}\n'
+	                    f'📝 Messages: {messages_day} / {messages_week} / {messages_month} / {messages_total}')
+
+
 async def delete_old_audios():
 	PENDING_PERIOD = 3600 * 48
 	now = datetime.datetime.now()
@@ -169,6 +204,7 @@ async def schedule_repeated_task(coroutine, interval: int, timeout: int = 5):
 
 def setup(dp: Dispatcher):
 	dp.register_message_handler(send_welcome, commands=['start'], content_types=ContentType.TEXT, chat_type=[types.ChatType.PRIVATE])
+	dp.register_message_handler(send_stats, commands=['stats'], content_types=ContentType.TEXT, chat_type=[types.ChatType.PRIVATE])
 
 	dp.register_message_handler(on_voice, content_types=types.ContentType.VOICE)
 	dp.register_message_handler(on_voice, content_types=types.ContentType.AUDIO)
