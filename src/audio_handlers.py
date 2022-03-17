@@ -84,8 +84,6 @@ async def on_voice(message: [types.voice.Voice, types.audio.Audio]):
 				                     reply_markup=types.InlineKeyboardMarkup(1, [
 					                     [types.InlineKeyboardButton(f'🔈 Громкость {user_object.volume_level * 100:.0f}%',
 					                                                 callback_data=f'switch_volume_{audio.hash}')]
-					                     [types.InlineKeyboardButton(f'🔈 Минус {user_object.minus}%',
-					                                                 callback_data=f'switch_minus_{audio.hash}')]
 				                     ]))
 
 
