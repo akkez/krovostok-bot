@@ -49,7 +49,7 @@ class BotAudio(Model):
 	)
 	hash = fields.CharField(max_length=16, default=lambda: generate_random_key(16), index=True)
 	volume_level = fields.FloatField()
-	created_at = fields.DatetimeField(auto_now_add=True)
+    created_at = fields.DatetimeField(auto_now_add=True)
 
 	class Meta:
 		table = "bot_audios"
