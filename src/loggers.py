@@ -42,6 +42,9 @@ class LogMiddleware(BaseMiddleware):
 					pass
 			else:
 				user_obj = await BotUser.filter(id=from_user.id).first()
+			if user_obj.is_premium is None and 'is_premium' in from_user:
+				user_obj.is_premium = from_user['is_premium']
+				await user_obj.save()
 
 		message_text = None
 		if message and message.message and message.message.text:

@@ -18,6 +18,7 @@ class BotUser(Model):
 	audios: fields.ReverseRelation["models.BotAudio"]
 
 	volume_level = fields.FloatField(default=1.0)
+	is_premium = fields.BooleanField(null=True)
 
 	class Meta:
 		table = "bot_users"

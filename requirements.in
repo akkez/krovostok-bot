@@ -1,6 +1,7 @@
 python-dotenv==0.17.1
 tortoise-orm==0.17.3
-aiogram==2.12.1
+aiogram==2.25.1
 aiosqlite==0.16.1
+pip-tools==7.3.0
 
 # asyncpg==0.23.0

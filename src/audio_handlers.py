@@ -80,11 +80,19 @@ async def on_voice(message: [types.voice.Voice, types.audio.Audio]):
 				logger.warning(f'Convert failed: code {ret}')
 
 			with open(destination_file.name, 'rb') as sending_file:
-				await bot.send_voice(chat_id=message.chat.id, voice=sending_file, caption=f'@{(await bot.me).username}',
-				                     reply_markup=types.InlineKeyboardMarkup(1, [
-					                     [types.InlineKeyboardButton(f'🔈 Громкость {user_object.volume_level * 100:.0f}%',
-					                                                 callback_data=f'switch_volume_{audio.hash}')]
-				                     ]))
+				try:
+					await bot.send_voice(chat_id=message.chat.id, voice=sending_file, caption=f'@{(await bot.me).username}',
+										 reply_markup=types.InlineKeyboardMarkup(1, [
+											 [types.InlineKeyboardButton(f'🔈 Громкость {user_object.volume_level * 100:.0f}%',
+																		 callback_data=f'switch_volume_{audio.hash}')]
+										 ]))
+				except aiogram.exceptions.BadRequest as e:
+					if len(e.args) and e.args[0] == 'Voice_messages_forbidden':
+						logger.warning(f'User has voice privacy enabled: {message.from_user}')
+						await message.reply('Я не могу отправить тебе войс, потому что твои настройки приватности это запрещают. '
+											'Пожалуйста, разреши мне это здесь: Settings > Privacy & Security > Voice messages')
+					else:
+						raise e
 
 
 def get_volume_inline_choose_keyboard(audio: BotAudio):
